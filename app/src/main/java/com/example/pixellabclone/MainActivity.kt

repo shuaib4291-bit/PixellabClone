@@ -1,0 +1,99 @@
+package com.example.pixellabclone
+
+import android.content.ContentValues
+import android.graphics.Bitmap
+import android.graphics.Color
+import android.os.Build
+import android.os.Bundle
+import android.os.Environment
+import android.provider.MediaStore
+import android.widget.Button
+import android.widget.EditText
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
+import java.io.OutputStream
+
+class MainActivity : AppCompatActivity() {
+
+    private lateinit var canvasView: CanvasView
+    private var colorIndex = 0
+    private val colors = listOf(Color.BLACK, Color.RED, Color.BLUE, Color.GREEN, Color.MAGENTA, Color.WHITE, Color.YELLOW)
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        canvasView = findViewById(R.id.canvasView)
+
+        findViewById<Button>(R.id.btnAddText).setOnClickListener {
+            showAddTextDialog()
+        }
+
+        findViewById<Button>(R.id.btnTextColor).setOnClickListener {
+            colorIndex = (colorIndex + 1) % colors.size
+            canvasView.changeTextColor(colors[colorIndex])
+        }
+
+        findViewById<Button>(R.id.btnTextSize).setOnClickListener {
+            canvasView.increaseTextSize()
+        }
+
+        findViewById<Button>(R.id.btnBgColor).setOnClickListener {
+            colorIndex = (colorIndex + 1) % colors.size
+            canvasView.changeBgColor(colors[colorIndex])
+        }
+
+        findViewById<Button>(R.id.btnBold).setOnClickListener {
+            canvasView.toggleBold()
+        }
+
+        findViewById<Button>(R.id.btnSave).setOnClickListener {
+            saveImageToGallery(canvasView.getBitmap())
+        }
+    }
+
+    private fun showAddTextDialog() {
+        val input = EditText(this)
+        input.hint = "এখানে টেক্সট লিখুন..."
+        AlertDialog.Builder(this)
+            .setTitle("নতুন টেক্সট যোগ করুন")
+            .setView(input)
+            .setPositiveButton("যোগ করুন") { _, _ ->
+                val text = input.text.toString()
+                if (text.isNotEmpty()) {
+                    canvasView.addText(text)
+                }
+            }
+            .setNegativeButton("বাতিল", null)
+            .show()
+    }
+
+    private fun saveImageToGallery(bitmap: Bitmap) {
+        val filename = "Pixellab_${System.currentTimeMillis()}.png"
+        var fos: OutputStream? = null
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
+                    put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/PixellabClone")
+                }
+                val imageUri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+                fos = imageUri?.let { contentResolver.openOutputStream(it) }
+            } else {
+                val imagesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                val image = java.io.File(imagesDir, filename)
+                fos = java.io.FileOutputStream(image)
+            }
+
+            fos?.use {
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+                Toast.makeText(this, "ছবি গ্যালারিতে সেভ হয়েছে!", Toast.LENGTH_LONG).show()
+            }
+        } catch (e: Exception) {
+            Toast.makeText(this, "সেভ করতে সমস্যা হয়েছে: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+}
