@@ -20,25 +20,16 @@ class CanvasView(context: Context, attrs: AttributeSet?) : View(context, attrs) 
     private val layers = mutableListOf<TextLayer>()
     private var selectedLayer: TextLayer? = null
     private var bgColor: Int = Color.WHITE
-    
-    // Paint টেক্সট আঁকার জন্য
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textSize = 70f
-    }
-    
-    // সিলেকশন বর্ডারের জন্য
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 70f }
     private val borderPaint = Paint().apply {
         color = Color.BLUE
         style = Paint.Style.STROKE
         strokeWidth = 3f
         pathEffect = DashPathEffect(floatArrayOf(10f, 10f), 0f)
-        isAntiAlias = true // মসৃণ বর্ডারের জন্য
+        isAntiAlias = true
     }
 
-    init {
-        // ডিফল্ট টেক্সট
-        addText("New Text")
-    }
+    // init { addText("New Text") } // অ্যাপ ক্র্যাশ এড়াতে এটি সরানো হয়েছে
 
     fun addText(text: String) {
         val newLayer = TextLayer(text, 200f, 300f)
@@ -81,7 +72,6 @@ class CanvasView(context: Context, attrs: AttributeSet?) : View(context, attrs) 
             paint.typeface = if (layer.isBold) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
             canvas.drawText(layer.text, layer.x, layer.y, paint)
 
-            // সিলেক্ট করা টেক্সটের চারপাশে বর্ডার দেখানো
             if (layer == selectedLayer) {
                 val textWidth = paint.measureText(layer.text)
                 canvas.drawRect(
@@ -101,7 +91,6 @@ class CanvasView(context: Context, attrs: AttributeSet?) : View(context, attrs) 
 
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
-                // টাচ করা পজিশনে কোনো টেক্সট আছে কিনা চেক করা
                 for (layer in layers.reversed()) {
                     paint.textSize = layer.textSize
                     val width = paint.measureText(layer.text)
@@ -126,18 +115,18 @@ class CanvasView(context: Context, attrs: AttributeSet?) : View(context, attrs) 
 
     fun getBitmap(): Bitmap {
         val currentSelected = selectedLayer
-        selectedLayer = null // সেভ করার সময় সিলেকশন বর্ডার লুকানো
+        selectedLayer = null // সেভ করার সময় বর্ডার হাইড করা
         
-        // UI আপডেট নিশ্চিত করা
-        postInvalidate()
+        // View এর সাইজ 0 হলে ক্র্যাশ এড়াতে ডিফল্ট সাইজ
+        val w = if (width > 0) width else 500
+        val h = if (height > 0) height else 500
         
-        // বিটম্যাপ তৈরি করা
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        draw(canvas) // সরাসরি ক্যানভাসে ড্র করা হচ্ছে
+        draw(canvas) 
 
         selectedLayer = currentSelected
-        postInvalidate()
+        invalidate()
         return bitmap
     }
 }
