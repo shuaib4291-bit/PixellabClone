@@ -3,7 +3,7 @@ name: Android Debug Build
 on:
   push:
     branches: [ "main", "master" ]
-  workflow_dispatch: 
+  workflow_dispatch:
 
 jobs:
   build:
@@ -19,30 +19,27 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      # Android SDK সেটআপ (XML Warning এবং Platform Missing এরর দূর করতে)
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
-          packages: 'platforms;android-34 build-tools;34.0.0'
+          packages: 'platforms;android-35 build-tools;35.0.0'
 
-      # Gradle সেটআপ
+      # মূল পরিবর্তন: Gradle সংস্করণ 8.9 নির্দিষ্ট করুন (AGP 8.7.3 এর জন্য প্রয়োজন)
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
-          gradle-version: 8.7
+          gradle-version: 8.9
 
-      # gradlew তৈরি করা
+      # Gradle Wrapper তৈরি করুন, এটিও 8.9 নির্দেশ করবে
       - name: Generate Gradle Wrapper
-        run: gradle wrapper
+        run: gradle wrapper --gradle-version 8.9
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # APK বিল্ড করা
       - name: Build Debug APK
         run: ./gradlew assembleDebug
 
-      # তৈরি হওয়া APK আপলোড করা
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
