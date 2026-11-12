@@ -2,7 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.pixellabclone">
 
-    <!-- Android 9 এবং তার নিচের জন্য পারমিশন -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
 
@@ -10,7 +9,8 @@
         android:allowBackup="true"
         android:label="Pixellab Clone"
         android:supportsRtl="true"
-        android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar">
+        android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar"> 
+        <!-- যদি থিম না পাওয়া যায়, তবে ব্যবহার করুন: @style/Theme.AppCompat.Light.NoActionBar -->
         
         <activity
             android:name=".MainActivity"
@@ -20,7 +20,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        
     </application>
 
 </manifest>
