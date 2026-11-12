@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://android.com"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#1E1E1E">
@@ -40,6 +40,7 @@
         android:layout_below="@id/topBar"
         android:padding="16dp">
 
+        <!-- আপনার CanvasView ক্লাসের সঠিক প্যাকেজ নাম নিশ্চিত করুন -->
         <com.example.pixellabclone.CanvasView
             android:id="@+id/canvasView"
             android:layout_width="match_parent"
