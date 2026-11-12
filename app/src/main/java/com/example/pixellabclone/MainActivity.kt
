@@ -1,6 +1,8 @@
 package com.example.pixellabclone
 
+import android.Manifest
 import android.content.ContentValues
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.os.Build
@@ -12,6 +14,8 @@ import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import java.io.OutputStream
 
 class MainActivity : AppCompatActivity() {
@@ -19,6 +23,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var canvasView: CanvasView
     private var colorIndex = 0
     private val colors = listOf(Color.BLACK, Color.RED, Color.BLUE, Color.GREEN, Color.MAGENTA, Color.WHITE, Color.YELLOW)
+    
+    // পারমিশন রিকোয়েস্ট কোড
+    private val STORAGE_PERMISSION_CODE = 101
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,7 +56,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         findViewById<Button>(R.id.btnSave).setOnClickListener {
-            saveImageToGallery(canvasView.getBitmap())
+            checkPermissionAndSave()
         }
     }
 
@@ -67,6 +74,42 @@ class MainActivity : AppCompatActivity() {
             }
             .setNegativeButton("বাতিল", null)
             .show()
+    }
+
+    // পারমিশন চেক করার ফাংশন
+    private fun checkPermissionAndSave() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // Android 10+ এ কোনো পারমিশন লাগে না
+            saveImageToGallery(canvasView.getBitmap())
+        } else {
+            // Android 9 এবং তার নিচের জন্য পারমিশন চেক
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_GRANTED) {
+                saveImageToGallery(canvasView.getBitmap())
+            } else {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                    STORAGE_PERMISSION_CODE
+                )
+            }
+        }
+    }
+
+    // পারমিশন রেজাল্ট হ্যান্ডেল করা
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == STORAGE_PERMISSION_CODE) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                saveImageToGallery(canvasView.getBitmap())
+            } else {
+                Toast.makeText(this, "ছবি সেভ করতে স্টোরেজ পারমিশন প্রয়োজন!", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun saveImageToGallery(bitmap: Bitmap) {
