@@ -1,0 +1,133 @@
+package com.example.pixellabclone
+
+import android.content.Context
+import android.graphics.*
+import android.util.AttributeSet
+import android.view.MotionEvent
+import android.view.View
+
+data class TextLayer(
+    var text: String,
+    var x: Float,
+    var y: Float,
+    var color: Int = Color.BLACK,
+    var textSize: Float = 70f,
+    var isBold: Boolean = false
+)
+
+class CanvasView(context: Context, attrs: AttributeSet?) : View(context, attrs) {
+
+    private val layers = mutableListOf<TextLayer>()
+    private var selectedLayer: TextLayer? = null
+    private var bgColor: Int = Color.WHITE
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val borderPaint = Paint().apply {
+        color = Color.BLUE
+        style = Paint.Style.STROKE
+        strokeWidth = 3f
+        pathEffect = DashPathEffect(floatArrayOf(10f, 10f), 0f)
+    }
+
+    init {
+        // ডিফল্ট টেক্সট
+        addText("New Text")
+    }
+
+    fun addText(text: String) {
+        val newLayer = TextLayer(text, 200f, 300f)
+        layers.add(newLayer)
+        selectedLayer = newLayer
+        invalidate()
+    }
+
+    fun changeTextColor(color: Int) {
+        selectedLayer?.color = color
+        invalidate()
+    }
+
+    fun increaseTextSize() {
+        selectedLayer?.let {
+            it.textSize += 10f
+            invalidate()
+        }
+    }
+
+    fun toggleBold() {
+        selectedLayer?.let {
+            it.isBold = !it.isBold
+            invalidate()
+        }
+    }
+
+    fun changeBgColor(color: Int) {
+        bgColor = color
+        invalidate()
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+        canvas.drawColor(bgColor)
+
+        for (layer in layers) {
+            paint.color = layer.color
+            paint.textSize = layer.textSize
+            paint.typeface = if (layer.isBold) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
+            canvas.drawText(layer.text, layer.x, layer.y, paint)
+
+            // সিলেক্ট করা টেক্সটের চারপাশে বর্ডার দেখানো
+            if (layer == selectedLayer) {
+                val textWidth = paint.measureText(layer.text)
+                canvas.drawRect(
+                    layer.x - 10,
+                    layer.y - layer.textSize,
+                    layer.x + textWidth + 10,
+                    layer.y + 15,
+                    borderPaint
+                )
+            }
+        }
+    }
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        val touchX = event.x
+        val touchY = event.y
+
+        when (event.action) {
+            MotionEvent.ACTION_DOWN -> {
+                // টাচ করা পজিশনে কোনো টেক্সট আছে কিনা চেক করা
+                for (layer in layers.reversed()) {
+                    paint.textSize = layer.textSize
+                    val width = paint.measureText(layer.text)
+                    if (touchX >= layer.x - 20 && touchX <= layer.x + width + 20 &&
+                        touchY >= layer.y - layer.textSize && touchY <= layer.y + 20) {
+                        selectedLayer = layer
+                        invalidate()
+                        return true
+                    }
+                }
+            }
+            MotionEvent.ACTION_MOVE -> {
+                selectedLayer?.let {
+                    it.x = touchX - 50f
+                    it.y = touchY
+                    invalidate()
+                }
+            }
+        }
+        return true
+    }
+
+    fun getBitmap(): Bitmap {
+        val currentSelected = selectedLayer
+        selectedLayer = null // সেভ করার সময় সিলেকশন বর্ডার লুকানো
+        invalidate()
+
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        draw(canvas)
+
+        selectedLayer = currentSelected
+        invalidate()
+        return bitmap
+    }
+}
