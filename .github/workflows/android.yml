@@ -1,0 +1,80 @@
+name: Android CI
+
+on:
+  push:
+    branches: [ "main", "master", "develop" ]
+  pull_request:
+    branches: [ "main", "master", "develop" ]
+  workflow_dispatch:  # ম্যানুয়ালি রান করার জন্য
+
+jobs:
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. রিপোজিটরি চেকআউট
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. JDK সেটআপ (Android Gradle এর জন্য 17 প্রয়োজন)
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # 3. Gradle ক্যাশ (বিল্ড ফাস্ট করার জন্য)
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # 4. gradlew executable পারমিশন
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # 5. Lint চেক
+      - name: Run Lint
+        run: ./gradlew lintDebug
+
+      # 6. Unit টেস্ট
+      - name: Run Unit Tests
+        run: ./gradlew testDebugUnitTest
+
+      # 7. Debug APK বিল্ড
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug
+
+      # 8. Release APK বিল্ড (unsigned)
+      - name: Build Release APK (unsigned)
+        run: ./gradlew assembleRelease
+
+      # 9. APK আর্টিফ্যাক্ট হিসেবে আপলোড
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/*.apk
+          retention-days: 30
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-unsigned
+          path: app/build/outputs/apk/release/*.apk
+          retention-days: 30
+
+      # 10. টেস্ট রিপোর্ট আপলোড (ব্যর্থ হলে)
+      - name: Upload Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: app/build/reports/tests/
+          retention-days: 7
